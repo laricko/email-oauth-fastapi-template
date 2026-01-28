@@ -1,0 +1,11 @@
+[project]
+name = "mailzen"
+version = "0.1.0"
+description = "Clean email box agent"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.128.0",
+    "pydantic-settings>=2.12.0",
+    "sqlalchemy>=2.0.46",
+]
