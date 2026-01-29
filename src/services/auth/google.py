@@ -2,17 +2,22 @@ import secrets
 from urllib.parse import urlencode
 
 import httpx
-from sqlalchemy.orm import Session
+import redis.asyncio as redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings
+from services.auth.crud import CreateUser
 from services.auth.dtos import OAuthTokens
 
 
 class GoogleAuthService:
-    def __init__(self, settings: Settings, db: Session):
+    def __init__(self, settings: Settings, session: AsyncSession, redis: redis.Redis):
+        self.redis = redis
         self.settings = settings
+        self.session = session
 
     async def generate_auth_google(self) -> str:
+        state = secrets.token_urlsafe(16)
         params = {
             "client_id": self.settings.google_client_id,
             "redirect_uri": self.settings.google_redirect_uri,
@@ -20,13 +25,16 @@ class GoogleAuthService:
             "scope": " ".join(self.settings.google_scopes),
             "access_type": "offline",
             "prompt": "select_account",
+            "state": state,
         }
 
         return f"{self.settings.google_auth_url}?{urlencode(params)}"
 
-    async def handle_callback(self, code: str):
+    async def handle_callback(self, code: str, state: str):
         tokens = await self._exchange_code(code)
-        return tokens
+        user_info = await self.get_user_info(tokens.access_token)
+        await self._create_user(user_info, tokens)
+        return "http://localhost:8000/me?state=" + state
 
     async def _exchange_code(self, code: str) -> OAuthTokens:
         async with httpx.AsyncClient() as client:
@@ -51,15 +59,18 @@ class GoogleAuthService:
             expires_in=response_data["expires_in"],
         )
 
-    # async def get_user_info(access_token: str):
-    #     access_token = "***REMOVED***"
-    #     async with httpx.AsyncClient() as client:
-    #         response = await client.get(
-    #             "https://openidconnect.googleapis.com/v1/userinfo",
-    #             headers={
-    #                 "Authorization": f"Bearer {access_token}"
-    #             }
-    #         )
+    async def get_user_info(self, access_token: str):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://openidconnect.googleapis.com/v1/userinfo",
+                headers={
+                    "Authorization": f"Bearer {access_token}"
+                }
+            )
 
-    #     response.raise_for_status()
-    #     return response.json()
+        response.raise_for_status()
+        return response.json()
+
+    async def _create_user(self, user_info, tokens: OAuthTokens):
+        create_user = CreateUser(self.session)
+        await create_user.execute(user_info["email"], tokens)

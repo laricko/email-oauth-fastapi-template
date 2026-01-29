@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends
+from fastapi.responses import RedirectResponse
 from fastapi.routing import APIRouter
 
 from depends import get_google_auth_service
@@ -20,5 +21,7 @@ async def auth_google_start(
 async def auth_google_callback(
     google_auth_service: Annotated[GoogleAuthService, Depends(get_google_auth_service)],
     code: str,
+    state: str,
 ):
-    return await google_auth_service.handle_callback(code)
+    url = await google_auth_service.handle_callback(code, state)
+    return RedirectResponse(url=url)

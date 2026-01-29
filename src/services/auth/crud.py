@@ -1,0 +1,33 @@
+from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import ProviderType, User, UserEmail
+from services.auth.dtos import OAuthTokens
+
+
+class CreateUser:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def execute(self, email: str, tokens: OAuthTokens) -> None:
+        user = User()
+        self.session.add(user)
+        await self.session.flush()
+
+        email, provider = email.lower().split("@")
+
+        if "gmail" in provider:
+            provider_type = ProviderType.google
+
+        now = datetime.now()
+        user_email = UserEmail(
+            user_id=user.id,
+            email=email,
+            provider=provider_type.value,
+            access_token=tokens.access_token,
+            refresh_token=tokens.refresh_token,
+            expires_at=now + timedelta(seconds=tokens.expires_in),
+            obtained_at=now,
+        )
+        self.session.add(user_email)
+        await self.session.commit()

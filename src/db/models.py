@@ -1,6 +1,7 @@
 from datetime import datetime
+from enum import StrEnum, auto
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -18,6 +19,10 @@ class User(Base):
     __tablename__ = "users"
 
 
+class ProviderType(StrEnum):
+    google = auto()
+
+
 class UserEmail(Base):
     __tablename__ = "user_emails"
 
@@ -29,6 +34,11 @@ class UserEmail(Base):
     provider: Mapped[str] = mapped_column(String(50))
     last_synced_at: Mapped[datetime | None]
 
+    access_token: Mapped[str]
+    refresh_token: Mapped[str | None]
+    expires_at: Mapped[datetime]
+    obtained_at: Mapped[datetime]
+    
     __table_args__ = (
         UniqueConstraint(
             "provider",
