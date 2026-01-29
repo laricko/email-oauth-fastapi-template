@@ -2,21 +2,20 @@ import secrets
 from urllib.parse import urlencode
 
 import httpx
-import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings
 from services.auth.crud import CreateUser
 from services.auth.dtos import OAuthTokens
+from services.auth.providers.base import OAuthProvider
 
 
-class GoogleAuthService:
-    def __init__(self, settings: Settings, session: AsyncSession, redis: redis.Redis):
-        self.redis = redis
+class GoogleOAuthProvider(OAuthProvider):
+    def __init__(self, settings: Settings, session: AsyncSession):
         self.settings = settings
         self.session = session
 
-    async def generate_auth_google(self) -> str:
+    async def get_auth_url(self) -> str:
         state = secrets.token_urlsafe(16)
         params = {
             "client_id": self.settings.google_client_id,
@@ -30,9 +29,9 @@ class GoogleAuthService:
 
         return f"{self.settings.google_auth_url}?{urlencode(params)}"
 
-    async def handle_callback(self, code: str, state: str):
+    async def handle_callback(self, code: str, state: str) -> str:
         tokens = await self._exchange_code(code)
-        user_info = await self.get_user_info(tokens.access_token)
+        user_info = await self._get_user_info(tokens.access_token)
         await self._create_user(user_info, tokens)
         return "http://localhost:8000/me?state=" + state
 
@@ -49,7 +48,7 @@ class GoogleAuthService:
                 },
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded"
-                }
+                },
             )
         response.raise_for_status()
         response_data = response.json()
@@ -59,13 +58,13 @@ class GoogleAuthService:
             expires_in=response_data["expires_in"],
         )
 
-    async def get_user_info(self, access_token: str):
+    async def _get_user_info(self, access_token: str):
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://openidconnect.googleapis.com/v1/userinfo",
                 headers={
                     "Authorization": f"Bearer {access_token}"
-                }
+                },
             )
 
         response.raise_for_status()
