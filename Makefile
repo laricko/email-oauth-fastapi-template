@@ -9,3 +9,6 @@ migrate:
 
 psql:
 	docker exec -it mailzen-postgres psql -U mailzen
+
+redis_cli:
+	docker exec -it mailzen-redis redis-cli

@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
+    secret_key: str
+
     @property
     def pg_dsn(self) -> str:
         return (

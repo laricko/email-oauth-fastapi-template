@@ -1,5 +1,6 @@
 from typing import Annotated, AsyncGenerator
 
+import redis.asyncio as redis
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,12 +16,20 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+async def get_redis_client(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AsyncGenerator[redis.Redis, None]:
+    redis_client = redis.Redis.from_url(settings.redis_dsn)
+    try:
+        yield redis_client
+    finally:
+        await redis_client.close()
+
+
 async def get_auth_service(
     provider: ProviderType,
     settings: Annotated[Settings, Depends(get_settings)],
+    redis: Annotated[redis.Redis, Depends(get_redis_client)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> OAuthProvider:
-    try:
-        return get_oauth_provider(provider, settings, session)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return get_oauth_provider(provider, settings, session, redis)

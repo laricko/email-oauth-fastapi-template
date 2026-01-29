@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ProviderType, User, UserEmail
@@ -10,11 +11,16 @@ class CreateUser:
         self.session = session
 
     async def execute(self, email: str, tokens: OAuthTokens) -> None:
+        stmt = select(UserEmail).where(UserEmail.email == email.lower())
+        user_obj = await self.session.execute(stmt)
+        if user_obj.scalars().first():
+            return
+
         user = User()
         self.session.add(user)
         await self.session.flush()
 
-        email, provider = email.lower().split("@")
+        _, provider = email.lower().split("@")
 
         if "gmail" in provider:
             provider_type = ProviderType.google

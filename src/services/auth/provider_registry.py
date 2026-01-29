@@ -1,3 +1,4 @@
+import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings
@@ -13,8 +14,6 @@ def get_oauth_provider(
     provider_name: str,
     settings: Settings,
     session: AsyncSession,
+    redis: redis.Redis
 ) -> OAuthProvider:
-    provider_class = _PROVIDER_REGISTRY.get(provider_name)
-    if not provider_class:
-        raise ValueError(f"Unknown provider: {provider_name}")
-    return provider_class(settings, session)
+    return _PROVIDER_REGISTRY[provider_name](settings, session, redis)

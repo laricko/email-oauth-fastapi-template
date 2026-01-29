@@ -2,6 +2,7 @@ import secrets
 from urllib.parse import urlencode
 
 import httpx
+import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings
@@ -11,9 +12,10 @@ from services.auth.providers.base import OAuthProvider
 
 
 class GoogleOAuthProvider(OAuthProvider):
-    def __init__(self, settings: Settings, session: AsyncSession):
+    def __init__(self, settings: Settings, session: AsyncSession, redis: redis.Redis):
         self.settings = settings
         self.session = session
+        self.redis = redis
 
     async def get_auth_url(self) -> str:
         state = secrets.token_urlsafe(16)
@@ -33,6 +35,11 @@ class GoogleOAuthProvider(OAuthProvider):
         tokens = await self._exchange_code(code)
         user_info = await self._get_user_info(tokens.access_token)
         await self._create_user(user_info, tokens)
+        await self.redis.setex(
+            state,
+            self.STATE_EXPIRATION_SECONDS,
+            user_info["email"],
+        )
         return "http://localhost:8000/me?state=" + state
 
     async def _exchange_code(self, code: str) -> OAuthTokens:
