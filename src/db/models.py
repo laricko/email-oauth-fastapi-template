@@ -21,6 +21,7 @@ class User(Base):
 
 class ProviderType(StrEnum):
     google = auto()
+    yandex = auto()
 
 
 class UserEmail(Base):

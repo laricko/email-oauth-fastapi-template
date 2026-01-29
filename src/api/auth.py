@@ -4,6 +4,7 @@ from fastapi import Depends
 from fastapi.responses import RedirectResponse
 from fastapi.routing import APIRouter
 
+from db.models import ProviderType
 from depends import get_auth_service
 from services.auth.providers.base import OAuthProvider
 
@@ -12,7 +13,7 @@ router = APIRouter()
 
 @router.get("/auth/{provider}/start")
 async def auth_start(
-    provider: str,
+    provider: ProviderType,
     auth_service: Annotated[OAuthProvider, Depends(get_auth_service)],
 ):
     return await auth_service.get_auth_url()
