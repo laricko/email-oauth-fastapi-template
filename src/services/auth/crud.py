@@ -12,8 +12,15 @@ class CreateUser:
 
     async def execute(self, email: str, tokens: OAuthTokens) -> None:
         stmt = select(UserEmail).where(UserEmail.email == email.lower())
-        user_obj = await self.session.execute(stmt)
-        if user_obj.scalars().first():
+        result = await self.session.execute(stmt)
+        user_obj = result.scalars().first()
+        if user_obj:
+            now = datetime.now()
+            user_obj.access_token = tokens.access_token
+            user_obj.refresh_token = tokens.refresh_token
+            user_obj.expires_at = now + timedelta(seconds=tokens.expires_in)
+            user_obj.obtained_at = now
+            await self.session.commit()
             return
 
         user = User()

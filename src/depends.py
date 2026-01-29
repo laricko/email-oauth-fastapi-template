@@ -1,7 +1,8 @@
 from typing import Annotated, AsyncGenerator
 
 import redis.asyncio as redis
-from fastapi import Depends, HTTPException
+from fastapi import Depends
+from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings, get_settings
@@ -9,6 +10,8 @@ from db.models import ProviderType
 from db.utils import sessionmaker
 from services.auth.provider_registry import get_oauth_provider
 from services.auth.providers.base import OAuthProvider
+from services.auth.tokens import AuthService
+from services.emails.sync import EmailService
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -26,10 +29,35 @@ async def get_redis_client(
         await redis_client.close()
 
 
-async def get_auth_service(
+async def get_token_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+    redis: Annotated[redis.Redis, Depends(get_redis_client)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    return AuthService(
+        secret_key=settings.secret_key,
+        redis=redis,
+        session=session,
+    )
+
+
+async def get_current_user(
+    credentials: Annotated[str, Depends(HTTPBearer())],
+    auth_service: Annotated[AuthService, Depends(get_token_service)],
+):
+    return await auth_service.get_current_user(credentials.credentials)
+
+
+async def get_oauth_service(
     provider: ProviderType,
     settings: Annotated[Settings, Depends(get_settings)],
     redis: Annotated[redis.Redis, Depends(get_redis_client)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> OAuthProvider:
     return get_oauth_provider(provider, settings, session, redis)
+
+
+async def get_email_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> EmailService:
+    return EmailService(session)
