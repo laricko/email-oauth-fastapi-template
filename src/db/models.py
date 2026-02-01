@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum, auto
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import ForeignKey, String, UniqueConstraint, func, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -39,7 +39,7 @@ class UserEmail(Base):
     refresh_token: Mapped[str | None]
     expires_at: Mapped[datetime]
     obtained_at: Mapped[datetime]
-    
+
     __table_args__ = (
         UniqueConstraint(
             "provider",
@@ -53,11 +53,19 @@ class Email(Base):
     __tablename__ = "emails"
 
     user_email_id: Mapped[int] = mapped_column(
-        ForeignKey("user_emails.id", ondelete="CASCADE"), index=True
+        ForeignKey("user_emails.id", ondelete="CASCADE")
     )
     external_id: Mapped[str] = mapped_column(String(255))
     from_email: Mapped[str] = mapped_column(String(255))
     subject: Mapped[str] = mapped_column(String(511))
-    content_snippet: Mapped[str] = mapped_column(String(511))
-    received_at: Mapped[datetime]
+    snippet: Mapped[str] = mapped_column(String(511))
+    recieved_at: Mapped[datetime]
     is_read: Mapped[bool] = mapped_column(default=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_email_id",
+            "external_id",
+            name="uq_emails_external_id_user_email_id",
+        ),
+    )

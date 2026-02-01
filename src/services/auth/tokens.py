@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import jwt
 import redis.asyncio as redis
@@ -6,6 +6,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import UserEmail
+from errors import ClientError
 from services.auth.dtos import UserOut
 
 ACCESS_TOKEN_EXPIRES_IN_MINUTES = 15
@@ -22,7 +23,7 @@ class AuthService:
     async def issue_access_token(self, state: str) -> dict:
         email = await self.redis.get(state)
         if not email:
-            raise ValueError("Invalid or expired state token")
+            raise ClientError("Invalid or expired state token")
 
         user = await self._get_user_email(email.decode())
         expiration = datetime.now() + timedelta(
@@ -43,14 +44,14 @@ class AuthService:
             )
             return payload
         except jwt.PyJWTError as e:
-            raise ValueError("Token decoding failed") from e
+            raise ClientError("Token decoding failed") from e
 
     async def _get_user_email(self, email: str) -> UserEmail:
         stmt = select(UserEmail).where(UserEmail.email == email.lower())
         result = await self.session.execute(stmt)
         user_obj = result.scalar_one_or_none()
         if not user_obj:
-            raise ValueError("User not found in database")
+            raise ClientError("User not found in database")
         return user_obj
 
     async def _get_user(self, email: str) -> UserOut:

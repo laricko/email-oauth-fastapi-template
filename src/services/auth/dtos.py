@@ -14,6 +14,11 @@ class UserOut(BaseModel):
     emails: list[UserEmailOut]
 
 
+class EmailSyncData(BaseModel):
+    email: str
+    count: int = 10
+
+
 class OAuthTokens(BaseModel):
     access_token: str
     refresh_token: str | None

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import Settings, get_settings
 from db.models import ProviderType
 from db.utils import sessionmaker
+from services.auth.dtos import UserOut
 from services.auth.provider_registry import get_oauth_provider
 from services.auth.providers.base import OAuthProvider
 from services.auth.tokens import AuthService
@@ -44,7 +45,7 @@ async def get_token_service(
 async def get_current_user(
     credentials: Annotated[str, Depends(HTTPBearer())],
     auth_service: Annotated[AuthService, Depends(get_token_service)],
-):
+) -> UserOut:
     return await auth_service.get_current_user(credentials.credentials)
 
 
