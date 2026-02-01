@@ -26,7 +26,6 @@ class EmailService:
             Email.external_id.in_([email.external_id for email in emails]),
             Email.user_email_id == emails[0].user_email_id
         )
-        print(stmt.compile(compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(stmt)
         existing_emails = result.scalars().all()
         existing_external_ids = {email.external_id for email in existing_emails}

@@ -25,7 +25,7 @@ class GoogleOAuthProvider(OAuthProvider):
             "response_type": "code",
             "scope": " ".join(self.settings.google_scopes),
             "access_type": "offline",
-            "prompt": "select_account",
+            "prompt": "consent",
             "state": state,
         }
 
