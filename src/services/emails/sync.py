@@ -11,6 +11,7 @@ from services.auth.dtos import EmailSyncData, UserOut
 from services.auth.providers.google import GoogleOAuthProvider
 from services.emails.providers.google import GoogleEmailProvider
 
+
 class EmailService:
     def __init__(self, session: AsyncSession, settings: Settings):
         self.session = session
@@ -22,6 +23,19 @@ class EmailService:
         self._check_user_email(current_user, user_email)
         emails = await self._fetch_emails(data, user_email)
         await self._save_emails(emails)
+        return emails
+
+    async def get_emails(self, user_email_str: str) -> list[Email]:
+        stmt = select(UserEmail).where(UserEmail.email == user_email_str.lower())
+        result = await self.session.execute(stmt)
+        user_email = result.scalar_one_or_none()
+        if not user_email:
+            raise ClientError("UserEmail not found.")
+
+        stmt = select(Email).where(Email.user_email_id == user_email.id) \
+            .order_by(Email.created_at.desc())
+        result = await self.session.execute(stmt)
+        emails = result.scalars().all()
         return emails
 
     async def _save_emails(self, emails: list[Email]):

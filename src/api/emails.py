@@ -19,8 +19,17 @@ async def sync_emails(
     return await email_service.sync_emails(data=data, current_user=current_user)
 
 
-@router.get("/")
-async def get_emails(
+@router.get("/addresses")
+async def get_emails_addresses(
     current_user: Annotated[UserOut, Depends(get_current_user)],
 ):
     return current_user.emails
+
+
+@router.get("/")
+async def get_emails(
+    _: Annotated[UserOut, Depends(get_current_user)],
+    user_email: str,
+    email_service: Annotated[EmailService, Depends(get_email_service)],
+):
+    return await email_service.get_emails(user_email_str=user_email)
