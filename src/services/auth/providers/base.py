@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from services.auth.dtos import OAuthTokens
+
 
 class OAuthProvider(ABC):
 
@@ -10,5 +12,5 @@ class OAuthProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def handle_callback(self, code: str, state: str) -> str:
+    async def handle_callback(self, code: str) -> tuple[dict, OAuthTokens]:
         raise NotImplementedError

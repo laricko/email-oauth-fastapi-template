@@ -6,8 +6,9 @@ from fastapi.routing import APIRouter
 from pydantic import BaseModel
 
 from db.models import ProviderType
-from depends import get_oauth_service, get_token_service
+from depends import get_oauth_callback_service, get_oauth_service, get_token_service
 from services.auth.dtos import GenerateTokenData
+from services.auth.callback import OAuthCallbackService
 from services.auth.providers.base import OAuthProvider
 from services.auth.tokens import AuthService
 
@@ -25,7 +26,10 @@ async def auth_start(
 @router.get("/{provider}/callback")
 async def auth_callback(
     provider: str,
-    oauth_service: Annotated[OAuthProvider, Depends(get_oauth_service)],
+    oauth_service: Annotated[
+        OAuthCallbackService,
+        Depends(get_oauth_callback_service)
+    ],
     code: str,
     state: str,
 ):

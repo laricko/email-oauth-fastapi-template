@@ -9,7 +9,7 @@ from config import Settings, get_settings
 from db.models import ProviderType
 from db.utils import sessionmaker
 from services.auth.dtos import UserOut
-from services.auth.callback import get_oauth_provider
+from services.auth.callback import OAuthCallbackService, get_oauth_provider
 from services.auth.providers.base import OAuthProvider
 from services.auth.tokens import AuthService
 from services.emails.sync import EmailService
@@ -52,13 +52,26 @@ async def get_current_user(
 async def get_oauth_service(
     provider: ProviderType,
     settings: Annotated[Settings, Depends(get_settings)],
+) -> OAuthProvider:
+    return get_oauth_provider(provider, settings)
+
+
+async def get_oauth_callback_service(
+    provider: ProviderType,
+    settings: Annotated[Settings, Depends(get_settings)],
     redis: Annotated[redis.Redis, Depends(get_redis_client)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> OAuthProvider:
-    return get_oauth_provider(provider, settings, session, redis)
+) -> OAuthCallbackService:
+    oauth_provider = get_oauth_provider(provider, settings)
+    return OAuthCallbackService(
+        provider=oauth_provider,
+        session=session,
+        redis=redis,
+    )
 
 
 async def get_email_service(
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> EmailService:
-    return EmailService(session)
+    return EmailService(session, settings)

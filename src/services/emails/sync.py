@@ -1,17 +1,20 @@
+from datetime import datetime, timedelta
+from functools import partial
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import Settings
 from db.models import Email, ProviderType, UserEmail
-from errors import ClientError
+from errors import ClientError, EmailAuthError
 from services.auth.dtos import EmailSyncData, UserOut
+from services.auth.providers.google import GoogleOAuthProvider
 from services.emails.providers.google import GoogleEmailProvider
 
-GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1"
-
-
 class EmailService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, settings: Settings):
         self.session = session
+        self.settings = settings
 
     async def sync_emails(self, data: EmailSyncData, current_user: UserOut):
         self._check_email_in_users_email(data, current_user)
@@ -34,17 +37,45 @@ class EmailService:
         await self.session.commit()
 
     async def _fetch_emails(self, data, user_email):
-        if user_email.provider == ProviderType.google:
-            def fetch(token): return GoogleEmailProvider.fetch_emails(
-                user_email.id,
-                token,
-                data.count
-            )
+        fetcher, provider = self._get_provider_strategy(data, user_email)
         try:
-            emails = await fetch(user_email.access_token)
-        except Exception as e:
-            raise ClientError("Failed to fetch emails.")
-        return emails
+            return await fetcher(user_email.access_token)
+        except EmailAuthError as exc:
+            if not user_email.refresh_token:
+                raise ClientError("Failed to fetch emails.") from exc
+
+            try:
+                tokens = await provider.refresh_token(user_email.refresh_token)
+            except Exception as refresh_exc:
+                raise ClientError("Failed to refresh token.") from refresh_exc
+
+            now = datetime.now()
+            user_email.access_token = tokens.access_token
+            user_email.expires_at = now + timedelta(seconds=tokens.expires_in)
+            user_email.obtained_at = now
+            if tokens.refresh_token:
+                user_email.refresh_token = tokens.refresh_token
+            await self.session.commit()
+
+            try:
+                return await fetcher(tokens.access_token)
+            except EmailAuthError as final_exc:
+                raise ClientError("Failed to fetch emails.") from final_exc
+            except Exception as final_exc:
+                raise ClientError("Failed to fetch emails.") from final_exc
+        except Exception as exc:
+            raise ClientError("Failed to fetch emails.") from exc
+
+    def _get_provider_strategy(self, data, user_email):
+        if user_email.provider == ProviderType.google:
+            fetcher = partial(
+                GoogleEmailProvider.fetch_emails,
+                user_email.id,
+                count=data.count,
+            )
+            provider = GoogleOAuthProvider(self.settings)
+            return fetcher, provider
+        raise ClientError("Unsupported email provider.")
 
     def _check_user_email(self, current_user, user_email):
         if not user_email:

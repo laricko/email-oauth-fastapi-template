@@ -23,4 +23,4 @@ async def sync_emails(
 async def get_emails(
     current_user: Annotated[UserOut, Depends(get_current_user)],
 ):
-    return await current_user.emails
+    return current_user.emails

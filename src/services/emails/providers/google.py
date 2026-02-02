@@ -3,6 +3,7 @@ from email.utils import parsedate_to_datetime
 import httpx
 
 from db.models import Email
+from errors import EmailAuthError
 
 GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1"
 
@@ -26,6 +27,8 @@ class GoogleEmailProvider:
                 headers=headers,
                 params={"maxResults": count}
             )
+            if resp.status_code == 401:
+                raise EmailAuthError("Email access token is unauthorized.")
             resp.raise_for_status()
 
             messages = resp.json().get("messages", [])
@@ -39,6 +42,8 @@ class GoogleEmailProvider:
                     headers=headers,
                     params={"format": "metadata"}
                 )
+                if msg_resp.status_code == 401:
+                    raise EmailAuthError("Email access token is unauthorized.")
                 msg_resp.raise_for_status()
                 email_data = msg_resp.json()
                 for data in email_data["payload"]["headers"]:
