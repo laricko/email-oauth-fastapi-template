@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:latest
-    container_name: mailzen-postgres
+    container_name: template-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: mailzen
-      POSTGRES_USER: mailzen
-      POSTGRES_PASSWORD: mailzen
+      POSTGRES_DB: template
+      POSTGRES_USER: template
+      POSTGRES_PASSWORD: template
     ports:
       - "5432:5432"
     volumes:
@@ -14,7 +14,7 @@ services:
 
   redis:
     image: redis:latest
-    container_name: mailzen-redis
+    container_name: template-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

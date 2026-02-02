@@ -8,7 +8,7 @@ migrate:
 	PYTHONPATH=src uv run alembic --config src/alembic.ini upgrade head
 
 psql:
-	docker exec -it mailzen-postgres psql -U mailzen
+	docker exec -it template-postgres psql -U template
 
 redis_cli:
-	docker exec -it mailzen-redis redis-cli
+	docker exec -it template-redis redis-cli

@@ -1,5 +1,5 @@
 [project]
-name = "mailzen"
+name = "template"
 version = "0.1.0"
 description = "Clean email box agent"
 readme = "README.md"

@@ -22,9 +22,9 @@ class Settings(BaseSettings):
 
     postgres_host: str = "localhost"
     postgres_port: int = 5432
-    postgres_user: str = "mailzen"
-    postgres_password: str = "mailzen"
-    postgres_db: str = "mailzen"
+    postgres_user: str = "template"
+    postgres_password: str = "template"
+    postgres_db: str = "template"
 
     redis_host: str = "localhost"
     redis_port: int = 6379

@@ -5,7 +5,7 @@ from api.auth import router as auth_router
 from api.emails import router as emails_router
 from errors import ClientError
 
-app = FastAPI(title="Mailzen backend")
+app = FastAPI(title="Template emails backend")
 app.include_router(auth_router)
 app.include_router(emails_router)
 
