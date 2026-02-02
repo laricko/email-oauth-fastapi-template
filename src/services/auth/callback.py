@@ -30,7 +30,7 @@ class OAuthCallbackService:
             self.provider.STATE_EXPIRATION_SECONDS,
             user_info["email"],
         )
-        return "http://localhost:8000/me?state=" + state
+        return "http://localhost:3000/your-frontend?state=" + state
 
 
 def get_oauth_provider(

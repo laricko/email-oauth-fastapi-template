@@ -34,9 +34,8 @@ class AuthService:
         return {"access_token": token}
 
     async def get_current_user(self, token: str) -> UserOut:
-        # payload = await self._decode_access_token(token)
-        # email = payload["sub"]
-        email = "laritsiuriumov@gmail.com"
+        payload = await self._decode_access_token(token)
+        email = payload["sub"]
         return await self._get_user(email)
 
     async def _decode_access_token(self, token: str) -> dict:
