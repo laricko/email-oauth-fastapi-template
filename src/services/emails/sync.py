@@ -40,8 +40,10 @@ class EmailService:
                 token,
                 data.count
             )
-
-        emails = await fetch(user_email.access_token)
+        try:
+            emails = await fetch(user_email.access_token)
+        except Exception as e:
+            raise ClientError("Failed to fetch emails.")
         return emails
 
     def _check_user_email(self, current_user, user_email):

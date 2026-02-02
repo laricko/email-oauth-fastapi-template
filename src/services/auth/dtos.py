@@ -19,6 +19,10 @@ class EmailSyncData(BaseModel):
     count: int = 10
 
 
+class GenerateTokenData(BaseModel):
+    state: str
+
+
 class OAuthTokens(BaseModel):
     access_token: str
     refresh_token: str | None

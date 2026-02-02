@@ -42,6 +42,28 @@ class GoogleOAuthProvider(OAuthProvider):
         )
         return "http://localhost:8000/me?state=" + state
 
+    async def refresh_token(self, refresh_tokem: str) -> OAuthTokens:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": self.settings.google_client_id,
+                    "client_secret": self.settings.google_client_secret,
+                    "refresh_token": refresh_tokem,
+                    "grant_type": "refresh_token",
+                },
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+            )
+        response.raise_for_status()
+        response_data = response.json()
+        return OAuthTokens(
+            access_token=response_data["access_token"],
+            refresh_token=refresh_tokem,
+            expires_in=response_data["expires_in"],
+        )
+
     async def _exchange_code(self, code: str) -> OAuthTokens:
         async with httpx.AsyncClient() as client:
             response = await client.post(

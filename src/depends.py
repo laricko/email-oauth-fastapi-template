@@ -9,7 +9,7 @@ from config import Settings, get_settings
 from db.models import ProviderType
 from db.utils import sessionmaker
 from services.auth.dtos import UserOut
-from services.auth.provider_registry import get_oauth_provider
+from services.auth.callback import get_oauth_provider
 from services.auth.providers.base import OAuthProvider
 from services.auth.tokens import AuthService
 from services.emails.sync import EmailService

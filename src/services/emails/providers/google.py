@@ -11,7 +11,7 @@ class GoogleEmailProvider:
 
     @classmethod
     async def fetch_emails(
-        self,
+        cls,
         user_email_id: int,
         access_token: str,
         count: int,

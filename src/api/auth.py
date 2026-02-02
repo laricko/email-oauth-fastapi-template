@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from db.models import ProviderType
 from depends import get_oauth_service, get_token_service
+from services.auth.dtos import GenerateTokenData
 from services.auth.providers.base import OAuthProvider
 from services.auth.tokens import AuthService
 
@@ -32,13 +33,9 @@ async def auth_callback(
     return RedirectResponse(url=url)
 
 
-class GenerateTokenData(BaseModel):
-    state: str
-
-
 @router.post("/token")
 async def token(
     data: GenerateTokenData,
     token_service: Annotated[AuthService, Depends(get_token_service)],
 ):
-    return await token_service.issue_access_token(state=data.state)
+    return await token_service.issue_access_token(data)
